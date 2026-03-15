@@ -1,159 +1,51 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de CEP com Frete</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 30px;
-    }
-
-    .container {
-      max-width: 500px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin: auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-
-    label, input, button {
-      display: block;
-      width: 100%;
-      margin-bottom: 12px;
-    }
-
-    input {
-      padding: 10px;
-      font-size: 16px;
-    }
-
-    button {
-      padding: 10px;
-      background: #0077cc;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 6px;
-    }
-
-    button:hover {
-      background: #005fa3;
-    }
-
-    .resultado {
-      margin-top: 20px;
-      padding: 15px;
-      background: #eef6ff;
-      border-radius: 8px;
-    }
-
-    .erro {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Frete - Informática</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
+        h2 { color: #333; text-align: center; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #218838; }
+        #resultado { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 5px; display: none; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Consulta de CEP</h1>
 
-    <!-- INTERFACE PROVEDORA -->
-    <label for="cep">Digite o CEP:</label>
-    <input type="text" id="cep" placeholder="Ex: 54400000" maxlength="9">
-    <button onclick="consultarEndereco()">Consultar</button>
+<div class="container">
+    <h2>Simulador de Frete</h2>
+    
+    <label for="cep">CEP de Destino:</label>
+    <input type="text" id="cep" placeholder="00000-000">
 
-    <!-- INTERFACE PROVEDORA -->
-    <div id="resultado" class="resultado"></div>
-  </div>
+    <label for="peso">Peso da Carga (kg):</label>
+    <input type="number" id="peso" placeholder="Ex: 5">
 
-  <script>
-    // COMPONENTE 1 - Serviço ViaCEP
-    // INTERFACE RECEPTORA
-    class ViaCepService {
-      static async buscarEndereco(cep) {
-        const cepLimpo = cep.replace(/\D/g, "");
+    <button onclick="calcularFrete()">Calcular Frete</button>
 
-        if (cepLimpo.length !== 8) {
-          throw new Error("CEP inválido. Digite exatamente 8 números.");
+    <div id="resultado"></div>
+</div>
+
+<script>
+    function calcularFrete() {
+        const peso = document.getElementById('peso').value;
+        const resDiv = document.getElementById('resultado');
+        
+        if(peso > 0) {
+            // Lógica simples de cálculo: R$ 15,00 fixo + R$ 2,50 por kg
+            const valor = 15 + (peso * 2.50);
+            resDiv.style.display = 'block';
+            resDiv.innerHTML = <strong>Resultado:</strong><br>O valor estimado do frete é: R$ ${valor.toFixed(2)};
+        } else {
+            alert("Por favor, insira um peso válido.");
         }
-
-        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-
-        if (!response.ok) {
-          throw new Error("Erro ao consultar a API ViaCEP.");
-        }
-
-        const data = await response.json();
-
-        if (data.erro) {
-          throw new Error("CEP não encontrado.");
-        }
-
-        return data;
-      }
     }
+</script>
 
-    // COMPONENTE 2 - Regra de Negócio
-    class FreteService {
-      static calcularFrete(endereco) {
-        const cidade = endereco.localidade?.toLowerCase();
-        const uf = endereco.uf?.toUpperCase();
-
-        if (uf === "PE" && cidade === "jaboatão dos guararapes") {
-          return "Frete grátis";
-        }
-
-        if (uf === "PE") {
-          return "R$ 10,00";
-        }
-
-        return "Frete não disponível";
-      }
-    }
-
-    // COMPONENTE 3 - Interface com o usuário
-    // INTERFACE PROVEDORA
-    class UI {
-      static exibirResultado(endereco, frete) {
-        const resultado = document.getElementById("resultado");
-
-        resultado.innerHTML = `
-          <p><strong>CEP:</strong> ${endereco.cep}</p>
-          <p><strong>Rua:</strong> ${endereco.logradouro || "Não informado"}</p>
-          <p><strong>Bairro:</strong> ${endereco.bairro || "Não informado"}</p>
-          <p><strong>Cidade:</strong> ${endereco.localidade}</p>
-          <p><strong>UF:</strong> ${endereco.uf}</p>
-          <p><strong>Frete:</strong> ${frete}</p>
-        `;
-      }
-
-      static exibirErro(mensagem) {
-        const resultado = document.getElementById("resultado");
-        resultado.innerHTML = `<p class="erro">${mensagem}</p>`;
-      }
-    }
-
-    // COMPONENTE 4 - Controlador
-    async function consultarEndereco() {
-      const cep = document.getElementById("cep").value;
-
-      try {
-        const endereco = await ViaCepService.buscarEndereco(cep);
-        const frete = FreteService.calcularFrete(endereco);
-        UI.exibirResultado(endereco, frete);
-      } catch (erro) {
-        UI.exibirErro(erro.message);
-      }
-    }
-  </script>
 </body>
 </html>
